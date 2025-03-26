@@ -10,7 +10,7 @@ import {
   MenuItem,
   Box,
 } from '@mui/material';
-import { AccountCircle, AdminPanelSettings } from '@mui/icons-material';
+import { AccountCircle, AdminPanelSettings, Dashboard } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 
@@ -37,6 +37,11 @@ const Navbar = () => {
   const handleAdminDashboard = () => {
     handleClose();
     navigate('/admin');
+  };
+
+  const handleStudentDashboard = () => {
+    handleClose();
+    navigate('/student/dashboard');
   };
 
   return (
@@ -67,6 +72,16 @@ const Navbar = () => {
 
           {isAuthenticated ? (
             <>
+              {user?.role === 'student' && (
+                <Button
+                  color="inherit"
+                  startIcon={<Dashboard />}
+                  onClick={handleStudentDashboard}
+                  sx={{ mr: 2 }}
+                >
+                  Dashboard
+                </Button>
+              )}
               {user?.role === 'teacher' && (
                 <Button
                   color="inherit"
@@ -118,6 +133,11 @@ const Navbar = () => {
                 {user?.role === 'admin' && (
                   <MenuItem onClick={handleAdminDashboard}>
                     Admin Dashboard
+                  </MenuItem>
+                )}
+                {user?.role === 'student' && (
+                  <MenuItem onClick={handleStudentDashboard}>
+                    My Dashboard
                   </MenuItem>
                 )}
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
