@@ -10,6 +10,7 @@ import CourseDetail from './components/courses/CourseDetail';
 import CreateCourse from './components/courses/CreateCourse';
 import PrivateRoute from './components/routing/PrivateRoute';
 import AdminDashboard from './admin/AdminDashboard';
+import StudentDashboard from './components/student/StudentDashboard';
 
 function App() {
   return (
@@ -33,6 +34,14 @@ function App() {
           element={
             <PrivateRoute roles={['admin']}>
               <AdminDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/student/dashboard"
+          element={
+            <PrivateRoute roles={['student']}>
+              <StudentDashboard />
             </PrivateRoute>
           }
         />
