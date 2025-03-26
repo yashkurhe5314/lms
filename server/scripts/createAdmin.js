@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Load environment variables from the correct path
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // Get command line arguments
 const args = process.argv.slice(2);

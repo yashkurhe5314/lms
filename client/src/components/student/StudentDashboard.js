@@ -1,10 +1,116 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import ReactPlayer from 'react-player';
+import {
+  getProgress,
+  getCourseContent,
+  getLesson,
+  saveNotes,
+  completeLesson,
+  updateLastAccessed
+} from '../../services/studentService';
 import './StudentDashboard.css';
+
+// Lazy load Monaco Editor
+const Editor = lazy(() => import('@monaco-editor/react'));
 
 const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState('content');
+  const [courseContent, setCourseContent] = useState(null);
+  const [currentLesson, setCurrentLesson] = useState(null);
+  const [progress, setProgress] = useState(null);
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [editorValue, setEditorValue] = useState('');
+  
   const navigate = useNavigate();
+  const { courseId } = useParams();
+
+  useEffect(() => {
+    loadCourseContent();
+  }, [courseId]);
+
+  const loadCourseContent = async () => {
+    try {
+      setLoading(true);
+      const data = await getCourseContent(courseId);
+      setCourseContent(data.lessons);
+      setProgress(data.progress);
+      
+      // Load last accessed lesson or first lesson
+      const lastAccessedId = data.progress.lastAccessedLesson || data.lessons[0]?._id;
+      if (lastAccessedId) {
+        loadLesson(lastAccessedId);
+      }
+    } catch (err) {
+      setError('Failed to load course content');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadLesson = async (lessonId) => {
+    try {
+      setLoading(true);
+      const lesson = await getLesson(lessonId);
+      setCurrentLesson(lesson);
+      setEditorValue(lesson.codeExample || '');
+      
+      // Load notes if they exist
+      const lessonNotes = progress?.notes.find(note => note.lesson === lessonId);
+      setNotes(lessonNotes?.content || '');
+      
+      // Update last accessed
+      await updateLastAccessed(lessonId);
+    } catch (err) {
+      setError('Failed to load lesson');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLessonClick = (lessonId) => {
+    loadLesson(lessonId);
+  };
+
+  const handleSaveNotes = async () => {
+    try {
+      await saveNotes(currentLesson._id, notes);
+      // Show success message or update UI
+    } catch (err) {
+      setError('Failed to save notes');
+      console.error(err);
+    }
+  };
+
+  const handleCompleteLesson = async () => {
+    try {
+      await completeLesson(currentLesson._id);
+      // Update progress in state
+      setProgress(prev => ({
+        ...prev,
+        completedLessons: [...prev.completedLessons, currentLesson._id]
+      }));
+    } catch (err) {
+      setError('Failed to mark lesson as complete');
+      console.error(err);
+    }
+  };
+
+  const handleEditorChange = (value) => {
+    setEditorValue(value);
+  };
+
+  if (loading) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="error">{error}</div>;
+  }
 
   return (
     <div className="student-dashboard">
@@ -18,29 +124,42 @@ const StudentDashboard = () => {
           <div className="progress-section">
             <h4>Course Progress</h4>
             <div className="progress-bar">
-              <div className="progress" style={{ width: '60%' }}></div>
+              <div 
+                className="progress" 
+                style={{ 
+                  width: `${(progress?.completedLessons.length / courseContent?.length) * 100}%` 
+                }}
+              ></div>
             </div>
-            <p>60% Complete</p>
+            <p>{Math.round((progress?.completedLessons.length / courseContent?.length) * 100)}% Complete</p>
           </div>
 
           <div className="course-content">
             <h4>Course Content</h4>
             <ul>
-              <li className="completed">Introduction to Programming</li>
-              <li className="completed">Variables and Data Types</li>
-              <li className="active">Control Structures</li>
-              <li>Functions and Methods</li>
-              <li>Object-Oriented Programming</li>
+              {courseContent?.map(lesson => (
+                <li
+                  key={lesson._id}
+                  className={`${progress?.completedLessons.includes(lesson._id) ? 'completed' : ''} 
+                            ${currentLesson?._id === lesson._id ? 'active' : ''}`}
+                  onClick={() => handleLessonClick(lesson._id)}
+                >
+                  {lesson.title}
+                </li>
+              ))}
             </ul>
           </div>
 
           <div className="resources-section">
             <h4>Resources</h4>
             <ul>
-              <li>Course Notes</li>
-              <li>Code Examples</li>
-              <li>Practice Exercises</li>
-              <li>Additional Reading</li>
+              {currentLesson?.resources.map((resource, index) => (
+                <li key={index}>
+                  <a href={resource.fileUrl} target="_blank" rel="noopener noreferrer">
+                    {resource.title}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -72,60 +191,88 @@ const StudentDashboard = () => {
         </div>
 
         <div className="main-content">
-          {activeTab === 'content' && (
+          {activeTab === 'content' && currentLesson && (
             <div className="content-section">
               <div className="video-player">
-                <div className="video-placeholder">
-                  Video Player Will Go Here
-                </div>
+                <ReactPlayer
+                  url={currentLesson.videoUrl}
+                  controls
+                  width="100%"
+                  height="100%"
+                />
               </div>
               
               <div className="content-details">
-                <h2>Control Structures</h2>
+                <h2>{currentLesson.title}</h2>
                 <div className="content-description">
-                  <p>Learn about if-else statements, loops, and other control structures in programming.</p>
+                  <p>{currentLesson.description}</p>
                 </div>
                 
                 <div className="code-editor">
                   <h3>Practice Exercise</h3>
-                  <div className="editor-placeholder">
-                    Code Editor Will Go Here
-                  </div>
+                  <Suspense fallback={<div className="editor-loading">Loading editor...</div>}>
+                    <Editor
+                      height="200px"
+                      defaultLanguage="javascript"
+                      value={editorValue}
+                      onChange={handleEditorChange}
+                      theme="vs-dark"
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        scrollBeyond: false,
+                        automaticLayout: true
+                      }}
+                    />
+                  </Suspense>
                 </div>
+
+                <button 
+                  className="complete-lesson-btn"
+                  onClick={handleCompleteLesson}
+                  disabled={progress?.completedLessons.includes(currentLesson._id)}
+                >
+                  {progress?.completedLessons.includes(currentLesson._id) 
+                    ? 'Completed' 
+                    : 'Mark as Complete'}
+                </button>
               </div>
             </div>
           )}
 
-          {activeTab === 'notes' && (
+          {activeTab === 'notes' && currentLesson && (
             <div className="notes-section">
               <div className="notes-editor">
                 <textarea 
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                   placeholder="Take notes here..."
                   className="notes-textarea"
                 ></textarea>
-                <button className="save-notes">Save Notes</button>
+                <button className="save-notes" onClick={handleSaveNotes}>
+                  Save Notes
+                </button>
               </div>
             </div>
           )}
 
-          {activeTab === 'resources' && (
+          {activeTab === 'resources' && currentLesson && (
             <div className="resources-section">
               <div className="resource-cards">
-                <div className="resource-card">
-                  <h3>Course Notes</h3>
-                  <p>Download comprehensive course notes</p>
-                  <button className="download-btn">Download</button>
-                </div>
-                <div className="resource-card">
-                  <h3>Code Examples</h3>
-                  <p>Access all code examples</p>
-                  <button className="download-btn">Download</button>
-                </div>
-                <div className="resource-card">
-                  <h3>Practice Exercises</h3>
-                  <p>Get additional practice problems</p>
-                  <button className="download-btn">Download</button>
-                </div>
+                {currentLesson.resources.map((resource, index) => (
+                  <div key={index} className="resource-card">
+                    <h3>{resource.title}</h3>
+                    <p>{resource.type}</p>
+                    <a 
+                      href={resource.fileUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="download-btn"
+                    >
+                      Download
+                    </a>
+                  </div>
+                ))}
               </div>
             </div>
           )}

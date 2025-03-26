@@ -7,6 +7,7 @@ const dotenv = require('dotenv');
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
 const adminRoutes = require('./routes/admin');
+const studentRoutes = require('./routes/student');
 
 // Load environment variables
 dotenv.config();
@@ -29,6 +30,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lms', {
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/student', studentRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
