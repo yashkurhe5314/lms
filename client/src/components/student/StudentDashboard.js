@@ -9,6 +9,7 @@ import {
   completeLesson,
   updateLastAccessed
 } from '../../services/studentService';
+import { PlayCircle, CheckCircle, Book, Code, Assignment } from '@mui/icons-material';
 import './StudentDashboard.css';
 
 // Lazy load Monaco Editor
@@ -112,87 +113,77 @@ const StudentDashboard = () => {
     return <div className="error">{error}</div>;
   }
 
+  const courseCategories = [
+    'All Courses',
+    'Python',
+    'JavaScript',
+    'Java',
+    'Web Development',
+    'Data Science',
+    'Machine Learning',
+    'Mobile Development'
+  ];
+
   return (
     <div className="student-dashboard">
+      {/* Course Navigation */}
+      <div className="course-nav">
+        {courseCategories.map((category, index) => (
+          <button
+            key={index}
+            className={index === 0 ? 'active' : ''}
+            onClick={() => {/* Handle category change */}}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
       {/* Sidebar */}
       <div className="dashboard-sidebar">
         <div className="sidebar-header">
-          <h3>My Learning</h3>
+          <h3>Course Progress</h3>
         </div>
         
-        <div className="sidebar-content">
-          <div className="progress-section">
-            <h4>Course Progress</h4>
-            <div className="progress-bar">
-              <div 
-                className="progress" 
-                style={{ 
-                  width: `${(progress?.completedLessons.length / courseContent?.length) * 100}%` 
-                }}
-              ></div>
-            </div>
-            <p>{Math.round((progress?.completedLessons.length / courseContent?.length) * 100)}% Complete</p>
+        <div className="progress-section">
+          <div className="progress-bar">
+            <div 
+              className="progress" 
+              style={{ 
+                width: `${(progress?.completedLessons.length / courseContent?.length) * 100}%` 
+              }}
+            ></div>
           </div>
+          <p>{Math.round((progress?.completedLessons.length / courseContent?.length) * 100)}% Complete</p>
+        </div>
 
-          <div className="course-content">
-            <h4>Course Content</h4>
-            <ul>
-              {courseContent?.map(lesson => (
-                <li
-                  key={lesson._id}
-                  className={`${progress?.completedLessons.includes(lesson._id) ? 'completed' : ''} 
-                            ${currentLesson?._id === lesson._id ? 'active' : ''}`}
-                  onClick={() => handleLessonClick(lesson._id)}
-                >
-                  {lesson.title}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="resources-section">
-            <h4>Resources</h4>
-            <ul>
-              {currentLesson?.resources.map((resource, index) => (
-                <li key={index}>
-                  <a href={resource.fileUrl} target="_blank" rel="noopener noreferrer">
-                    {resource.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div className="course-content">
+          <h4>Course Content</h4>
+          <ul>
+            {courseContent?.map(lesson => (
+              <li
+                key={lesson._id}
+                className={`${progress?.completedLessons.includes(lesson._id) ? 'completed' : ''} 
+                          ${currentLesson?._id === lesson._id ? 'active' : ''}`}
+                onClick={() => handleLessonClick(lesson._id)}
+              >
+                {progress?.completedLessons.includes(lesson._id) ? (
+                  <CheckCircle style={{ marginRight: '8px' }} />
+                ) : (
+                  <PlayCircle style={{ marginRight: '8px' }} />
+                )}
+                {lesson.title}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="dashboard-main">
-        <div className="main-header">
-          <div className="tab-navigation">
-            <button 
-              className={`tab ${activeTab === 'content' ? 'active' : ''}`}
-              onClick={() => setActiveTab('content')}
-            >
-              Content
-            </button>
-            <button 
-              className={`tab ${activeTab === 'notes' ? 'active' : ''}`}
-              onClick={() => setActiveTab('notes')}
-            >
-              Notes
-            </button>
-            <button 
-              className={`tab ${activeTab === 'resources' ? 'active' : ''}`}
-              onClick={() => setActiveTab('resources')}
-            >
-              Resources
-            </button>
-          </div>
-        </div>
-
-        <div className="main-content">
-          {activeTab === 'content' && currentLesson && (
-            <div className="content-section">
+        <div className="content-section">
+          {currentLesson && (
+            <>
               <div className="video-player">
                 <ReactPlayer
                   url={currentLesson.videoUrl}
@@ -212,7 +203,7 @@ const StudentDashboard = () => {
                   <h3>Practice Exercise</h3>
                   <Suspense fallback={<div className="editor-loading">Loading editor...</div>}>
                     <Editor
-                      height="200px"
+                      height="300px"
                       defaultLanguage="javascript"
                       value={editorValue}
                       onChange={handleEditorChange}
@@ -237,12 +228,9 @@ const StudentDashboard = () => {
                     : 'Mark as Complete'}
                 </button>
               </div>
-            </div>
-          )}
 
-          {activeTab === 'notes' && currentLesson && (
-            <div className="notes-section">
-              <div className="notes-editor">
+              <div className="notes-section">
+                <h3>Notes</h3>
                 <textarea 
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -253,28 +241,29 @@ const StudentDashboard = () => {
                   Save Notes
                 </button>
               </div>
-            </div>
-          )}
 
-          {activeTab === 'resources' && currentLesson && (
-            <div className="resources-section">
-              <div className="resource-cards">
-                {currentLesson.resources.map((resource, index) => (
-                  <div key={index} className="resource-card">
-                    <h3>{resource.title}</h3>
-                    <p>{resource.type}</p>
-                    <a 
-                      href={resource.fileUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="download-btn"
-                    >
-                      Download
-                    </a>
+              {currentLesson.resources?.length > 0 && (
+                <div className="resources-section">
+                  <h3>Additional Resources</h3>
+                  <div className="resource-cards">
+                    {currentLesson.resources.map((resource, index) => (
+                      <div key={index} className="resource-card">
+                        <h3>{resource.title}</h3>
+                        <p>{resource.type}</p>
+                        <a 
+                          href={resource.fileUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="download-btn"
+                        >
+                          Download
+                        </a>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
