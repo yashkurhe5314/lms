@@ -38,7 +38,7 @@ function App() {
           }
         />
         <Route
-          path="/student/dashboard"
+          path="/student/dashboard/:courseId"
           element={
             <PrivateRoute roles={['student']}>
               <StudentDashboard />

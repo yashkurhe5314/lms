@@ -24,13 +24,32 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editorValue, setEditorValue] = useState('');
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
   
   const navigate = useNavigate();
   const { courseId } = useParams();
 
   useEffect(() => {
-    loadCourseContent();
+    if (courseId) {
+      loadCourseContent();
+    } else {
+      loadEnrolledCourses();
+    }
   }, [courseId]);
+
+  const loadEnrolledCourses = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/student/enrolled-courses');
+      const data = await response.json();
+      setEnrolledCourses(data);
+    } catch (err) {
+      setError('Failed to load enrolled courses');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadCourseContent = async () => {
     try {
@@ -111,6 +130,37 @@ const StudentDashboard = () => {
 
   if (error) {
     return <div className="error">{error}</div>;
+  }
+
+  if (!courseId) {
+    return (
+      <div className="student-dashboard">
+        <div className="dashboard-main">
+          <div className="content-section">
+            <h2>My Courses</h2>
+            <div className="course-grid">
+              {enrolledCourses.map(course => (
+                <div key={course._id} className="course-card" onClick={() => navigate(`/student/dashboard/${course._id}`)}>
+                  <h3>{course.title}</h3>
+                  <p>{course.description}</p>
+                  <div className="course-progress">
+                    <div className="progress-bar">
+                      <div 
+                        className="progress" 
+                        style={{ 
+                          width: `${(course.progress?.completedLessons?.length / course.lessons?.length) * 100}%` 
+                        }}
+                      ></div>
+                    </div>
+                    <p>{Math.round((course.progress?.completedLessons?.length / course.lessons?.length) * 100)}% Complete</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const courseCategories = [

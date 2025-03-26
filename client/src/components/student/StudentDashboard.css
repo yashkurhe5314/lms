@@ -358,4 +358,48 @@
     padding: 6px 12px;
     margin: 0 4px;
   }
+}
+
+/* Course Selection View */
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.course-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.course-card h3 {
+  color: #202124;
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.course-card p {
+  color: #5f6368;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.course-progress {
+  margin-top: 1rem;
+}
+
+.course-progress p {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #1a73e8;
 } 

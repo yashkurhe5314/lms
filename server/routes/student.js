@@ -156,4 +156,29 @@ router.put('/last-accessed/:lessonId', auth, checkRole(['student']), async (req,
   }
 });
 
+// Get enrolled courses
+router.get('/enrolled-courses', auth, checkRole(['student']), async (req, res) => {
+  try {
+    const courses = await Course.find({ enrolledStudents: req.user._id })
+      .populate('instructor', 'name email');
+    
+    const coursesWithProgress = await Promise.all(courses.map(async (course) => {
+      const progress = await Progress.findOne({
+        student: req.user._id,
+        course: course._id
+      });
+      
+      return {
+        ...course.toObject(),
+        progress: progress || { completedLessons: [], lastAccessedLesson: null }
+      };
+    }));
+
+    res.json(coursesWithProgress);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 module.exports = router; 
